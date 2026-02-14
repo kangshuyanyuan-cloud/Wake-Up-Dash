@@ -8,6 +8,7 @@
 
     <meta name="theme-color" content="#0f172a">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="./manifest.json">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@zxing/library@latest"></script>
@@ -262,6 +263,30 @@
         </div>
     </div>
 
+    <!-- QR Check Modal (for Mobile Saving) -->
+    <div id="qr-check-modal"
+        class="fixed inset-0 bg-slate-900/90 z-[95] flex items-center justify-center hidden backdrop-blur-md transition-opacity duration-300">
+        <div class="w-full max-w-sm p-6 glass-card rounded-2xl relative mx-4 max-h-[90vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4 text-center text-white tracking-wide">解除用QRコード</h2>
+
+            <div class="bg-white p-4 rounded-xl mb-4 flex justify-center">
+                <img id="qr-image-display" src="" alt="Unlock QR Code" class="w-full max-w-[250px] h-auto">
+            </div>
+
+            <p class="text-sm text-slate-300 mb-6 text-center leading-relaxed font-medium">
+                画像を長押しして保存するか、<br>
+                スクリーンショットを撮ってご利用ください。
+            </p>
+
+            <div class="space-y-3">
+                <button onclick="closeQrCheck()"
+                    class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-xl font-bold transition">
+                    閉じる
+                </button>
+            </div>
+        </div>
+    </div>
+
     <main class="flex-grow flex flex-col items-center justify-center relative w-full z-10">
 
         <div id="setup-view" class="w-full text-center hidden space-y-8">
@@ -273,7 +298,7 @@
             <div class="relative">
                 <label class="block text-xs text-slate-500 mb-2 font-bold tracking-wider">TARGET TIME</label>
                 <input type="time" step="300" id="target-time-input"
-                    class="bg-slate-800 text-center text-4xl p-6 w-full rounded-2xl text-white outline-none focus:ring-2 focus:ring-teal-500/50 transition border border-slate-700 shadow-inner">
+                    class="bg-slate-800 text-center text-3xl py-3 w-full max-w-xs mx-auto rounded-xl text-white outline-none focus:ring-2 focus:ring-teal-500/50 transition border border-slate-700 shadow-inner">
             </div>
 
             <button onclick="saveSettings()"
@@ -351,7 +376,7 @@
         <div id="scanner-view"
             class="fixed inset-0 bg-slate-900 z-[70] flex flex-col items-center justify-center hidden">
             <div
-                class="relative w-full max-w-sm aspect-square rounded-3xl overflow-hidden shadow-2xl border border-slate-700">
+                class="relative w-[85vw] max-w-[280px] aspect-square rounded-3xl overflow-hidden shadow-2xl border border-slate-700 mx-auto">
                 <video id="video-feed" class="w-full h-full object-cover"></video>
                 <div class="absolute inset-0 border-[3px] border-white/20 m-12 rounded-2xl"></div>
                 <div
@@ -704,13 +729,30 @@
                 level: 'H'
             });
 
-            // Create download link
-            const link = document.createElement('a');
-            link.href = qr.toDataURL();
-            link.download = 'wake_up_dash_qr.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            // Set to modal image
+            const dataUrl = qr.toDataURL();
+            document.getElementById('qr-image-display').src = dataUrl;
+
+            // Open Modal
+            document.getElementById('qr-check-modal').classList.remove('hidden');
+            closeSettings();
+        }
+
+        function closeQrCheck() {
+            document.getElementById('qr-check-modal').classList.add('hidden');
+        }
+
+        // Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
         }
     </script>
 </body>
