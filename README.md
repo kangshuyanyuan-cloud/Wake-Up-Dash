@@ -47,9 +47,10 @@ GoogleのAI開発環境「Antigravity」を活用し、企画から実装・PWA�
 - **PWA**: Service Worker, Web Manifest
 - **Deployment**: Netlify
 
-## 📅 開発期間
-- **着手**: 2026年2月
-- **期間**: 約8時間 (要件定義・実装・デプロイ含む)
+## 📅 開発期間 (Timeline)
+**2026/02/14 - 2026/02/15 (Overnight Hack)**
+- **総開発時間**: 約8時間
+- **プロセス**: アイデア出し・実装・UI調整(並行作業 7h) -> PWA化・デプロイ(1h)
 
 ## 🔮 Future Roadmap (今後の展望)
 現在はオフライン版のプロトタイプですが、今後は以下の機能拡張を予定しています。
