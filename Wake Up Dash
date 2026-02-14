@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wake Up Dash - Minimalist</title>
+
+    <meta name="theme-color" content="#0f172a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Modern Morning Calm Design */
+        body {
+            font-family: 'Noto Sans JP', sans-serif;
+            background-color: #0f172a;
+            /* Slate 900 */
+            color: #f1f5f9;
+            /* Slate 100 */
+            overflow-x: hidden;
+        }
+
+        /* Smooth fade transitions */
+        .fade-enter {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        .fade-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        /* Glassmorphism card */
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            /* Slate 800 with opacity */
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+            opacity: 0.6;
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-screen justify-between p-6 max-w-md mx-auto relative bg-slate-900">
+
+    <!-- Background decorative blur -->
+    <div
+        class="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-500/10 rounded-full blur-3xl pointer-events-none z-0">
+    </div>
+    <div
+        class="fixed bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-teal-500/10 rounded-full blur-3xl pointer-events-none z-0">
+    </div>
+
+    <header class="flex justify-between items-start pt-4 relative z-20 w-full">
+        <div class="flex-1">
+            <div class="text-xs text-slate-400 font-medium tracking-wider mb-1">STREAK</div>
+            <div class="flex items-baseline gap-2">
+                <span id="streak-disp" class="text-6xl font-light text-white tracking-tighter">0</span>
+                <span class="text-lg text-teal-400 font-bold">日</span>
+            </div>
+        </div>
+
+        <div class="flex flex-col items-end gap-3">
+            <button onclick="openSettings()"
+                class="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+            </button>
+            <div class="text-right">
+                <span class="block text-[10px] text-slate-500 tracking-wider font-bold">SCORE</span>
+                <span id="score-disp" class="text-lg font-medium text-slate-300">0</span> <span
+                    class="text-xs text-slate-500">PT</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal"
+        class="fixed inset-0 bg-slate-900/80 z-[60] flex items-center justify-center hidden backdrop-blur-sm transition-opacity duration-300">
+        <div class="w-full max-w-sm p-8 glass-card rounded-2xl relative mx-4">
+            <h2 class="text-xl font-bold mb-8 text-center text-white tracking-wide">設定</h2>
+
+            <div class="space-y-4">
+                <button onclick="downloadQRCode()"
+                    class="w-full py-4 bg-slate-700/50 hover:bg-slate-700 text-white rounded-xl font-medium tracking-wide transition-all duration-200 border border-slate-600 flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    解除用QRを保存
+                </button>
+
+                <!-- Spacer ~1 button height -->
+                <div class="h-16"></div>
+
+                <button onclick="changeTime()"
+                    class="w-full py-4 bg-slate-700/50 hover:bg-slate-700 text-teal-300 rounded-xl font-medium tracking-wide transition-all duration-200 border border-slate-600">
+                    目標時間を変更
+                </button>
+
+                <button onclick="resetData()"
+                    class="w-full py-4 bg-red-900/20 hover:bg-red-900/40 text-red-400 rounded-xl font-medium tracking-wide transition-all duration-200 border border-red-900/30">
+                    データを初期化
+                </button>
+            </div>
+
+            <button onclick="closeSettings()"
+                class="absolute top-4 right-4 p-2 text-slate-500 hover:text-white rounded-full transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal"
+        class="fixed inset-0 bg-slate-900/90 z-[80] flex items-center justify-center hidden backdrop-blur-md transition-opacity duration-300">
+        <div
+            class="w-full max-w-sm p-8 glass-card rounded-2xl relative mx-4 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+            <h2 class="text-xl font-bold mb-4 text-center text-red-400 tracking-wide">CAUTION</h2>
+            <p class="text-sm text-slate-300 mb-8 text-center leading-relaxed">
+                目標時間を変更すると、<br>
+                現在の <span class="text-white font-bold">Streak</span> が <span class="text-red-400 font-bold">0</span>
+                にリセットされます。<br>
+                本当によろしいですか？
+            </p>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="closeConfirm()"
+                    class="py-3 bg-slate-700 text-slate-300 rounded-xl font-bold transition">
+                    キャンセル
+                </button>
+                <button onclick="executeChangeTime()"
+                    class="py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg transition">
+                    変更する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help/Usage Modal -->
+    <div id="help-modal"
+        class="fixed inset-0 bg-slate-900/90 z-[80] flex items-center justify-center hidden backdrop-blur-md transition-opacity duration-300">
+        <div class="w-full max-w-sm p-6 glass-card rounded-2xl relative mx-4 max-h-[80vh] overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4 text-center text-white tracking-wide">使い方・注意事項</h2>
+
+            <!-- Warning -->
+            <div class="mb-6 p-3 bg-red-900/20 border border-red-500/30 rounded-xl">
+                <p class="text-xs text-red-300 font-bold leading-relaxed">
+                    【重要】<br>
+                    本アプリにアラーム機能（音を鳴らす機能）は実装されていません。<br>
+                    必ず別途、ご自身で目覚まし時計やスマホのアラームを設定してください。
+                </p>
+            </div>
+
+            <!-- Instructions -->
+            <div class="space-y-4 text-sm text-slate-300">
+                <div>
+                    <span
+                        class="inline-block bg-teal-600 text-white text-[10px] px-2 py-0.5 rounded mr-2 align-middle">STEP
+                        1</span>
+                    <span class="font-bold text-white align-middle">目標時間を設定</span>
+                    <p class="mt-1 text-xs text-slate-400 pl-11">起きたい時間を設定し、「設定を保存」を押してください。</p>
+                </div>
+
+                <div>
+                    <span
+                        class="inline-block bg-teal-600 text-white text-[10px] px-2 py-0.5 rounded mr-2 align-middle">STEP
+                        2</span>
+                    <span class="font-bold text-white align-middle">QRコードを準備</span>
+                    <p class="mt-1 text-xs text-slate-400 pl-11">
+                        設定画面（歯車アイコン）から「解除用QR」をダウンロード・印刷し、寝室から離れた場所（洗面所など）に設置してください。
+                    </p>
+                </div>
+
+                <div>
+                    <span
+                        class="inline-block bg-teal-600 text-white text-[10px] px-2 py-0.5 rounded mr-2 align-middle">STEP
+                        3</span>
+                    <span class="font-bold text-white align-middle">起床 & スキャン</span>
+                    <p class="mt-1 text-xs text-slate-400 pl-11">
+                        起床後、<span class="text-white font-bold">5分以内</span>にスキャンしてください。<br>
+                        目標時間からの経過時間（0〜30秒、〜5分）によってランクと獲得ポイントが変動します。
+                    </p>
+                </div>
+            </div>
+
+            <button onclick="closeHelp()"
+                class="mt-8 w-full py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold transition">
+                閉じる
+            </button>
+        </div>
+    </div>
+
+    <!-- Scan Result Modal -->
+    <div id="scan-result-modal"
+        class="fixed inset-0 bg-slate-900/90 z-[90] flex items-center justify-center hidden backdrop-blur-md transition-opacity duration-300">
+        <div class="w-full max-w-sm p-8 glass-card rounded-2xl relative mx-4 animate-bounce-in">
+            <h2 id="scan-title" class="text-2xl font-bold mb-2 text-center text-white tracking-wide">SUCCESS</h2>
+            <div id="scan-pts"
+                class="text-4xl font-black text-center text-teal-400 mb-4 drop-shadow-[0_0_10px_rgba(45,212,191,0.5)]">
+                +100 PT</div>
+            <p id="scan-msg" class="text-sm text-slate-300 mb-8 text-center leading-relaxed font-medium">
+                素晴らしい起床です！<br>
+                今日も一日頑張りましょう。
+            </p>
+
+            <button onclick="closeScanResult()"
+                class="w-full py-4 bg-white text-slate-900 rounded-xl font-bold shadow-lg transition hover:bg-slate-200">
+                OK
+            </button>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="reset-confirm-modal"
+        class="fixed inset-0 bg-slate-900/90 z-[95] flex items-center justify-center hidden backdrop-blur-md transition-opacity duration-300">
+        <div
+            class="w-full max-w-sm p-8 glass-card rounded-2xl relative mx-4 border border-red-500/30 shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+            <h2 class="text-xl font-bold mb-4 text-center text-red-500 tracking-wide">DANGER</h2>
+            <p class="text-sm text-slate-300 mb-8 text-center leading-relaxed">
+                【警告】すべてのデータを初期化します。<br>
+                <span class="text-white font-bold">Streak</span> や <span class="text-white font-bold">獲得ポイント</span>
+                も<br>
+                完全に消去されます。<br><br>
+                本当に実行しますか？
+            </p>
+
+            <div class="grid grid-cols-2 gap-4">
+                <button onclick="closeResetConfirm()"
+                    class="py-3 bg-slate-700 text-slate-300 rounded-xl font-bold transition">
+                    キャンセル
+                </button>
+                <button onclick="executeResetData()"
+                    class="py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold shadow-lg transition">
+                    初期化する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow flex flex-col items-center justify-center relative w-full z-10">
+
+        <div id="setup-view" class="w-full text-center hidden space-y-8">
+            <div>
+                <h1 class="text-3xl font-light mb-2 text-white">Wake Up Dash</h1>
+                <p class="text-sm text-slate-400">新しい朝を始めましょう</p>
+            </div>
+
+            <div class="relative">
+                <label class="block text-xs text-slate-500 mb-2 font-bold tracking-wider">TARGET TIME</label>
+                <input type="time" step="300" id="target-time-input"
+                    class="bg-slate-800 text-center text-4xl p-6 w-full rounded-2xl text-white outline-none focus:ring-2 focus:ring-teal-500/50 transition border border-slate-700 shadow-inner">
+            </div>
+
+            <button onclick="saveSettings()"
+                class="w-full py-4 bg-teal-600 hover:bg-teal-500 text-white rounded-xl font-bold tracking-wider shadow-lg shadow-teal-900/20 transition-all duration-300 transform active:scale-[0.98]">
+                設定を保存
+            </button>
+
+            <!-- Spacer ~1 button height -->
+            <div class="h-16"></div>
+
+            <button onclick="openHelp()"
+                class="w-full py-4 bg-slate-700/50 hover:bg-slate-700 text-white rounded-xl font-bold tracking-wider border border-slate-600 transition-all duration-300">
+                使い方・注意事項
+            </button>
+        </div>
+
+        <div id="dashboard-view" class="w-full text-center hidden">
+            <!-- Point Explanation -->
+            <div
+                class="w-full mb-4 p-4 bg-slate-800/40 rounded-2xl border border-slate-700/30 text-left backdrop-blur-sm">
+                <div class="text-[10px] text-slate-400 font-bold mb-2 tracking-wider">POINT SYSTEM</div>
+                <div class="grid grid-cols-1 gap-1">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-teal-400">Rank S (0-30s)</span>
+                        <span class="font-bold text-white">100pt</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-blue-400">Rank A (30s-5m)</span>
+                        <span class="font-bold text-white">50pt</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs opacity-50">
+                        <span class="text-slate-400">Fail (時間外)</span>
+                        <span class="font-bold text-slate-300">0pt</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card p-8 rounded-3xl mb-8">
+                <div id="status-message" class="text-xs font-bold text-slate-500 tracking-widest mb-2">TARGET TIME
+                </div>
+                <div id="target-display" class="text-2xl mb-8 text-slate-300 font-light">00:00</div>
+
+
+
+                <div id="timer-box" class="mb-4 relative">
+                    <div id="main-timer" class="text-6xl font-light text-white tabular-nums tracking-tight">00:00:00
+                    </div>
+                    <div id="timer-label" class="text-xs font-bold text-red-400 mt-2 hidden animate-pulse">残り時間
+                    </div>
+                </div>
+            </div>
+
+            <button id="camera-btn" onclick="activateScanner()"
+                class="w-full py-5 text-lg font-bold bg-white text-slate-900 hover:bg-slate-200 rounded-xl shadow-lg transition-all duration-300 mb-4 flex items-center justify-center gap-2 transform active:scale-[0.98]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+                    <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+                    <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+                    <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+                </svg>
+                QRコードをスキャン
+            </button>
+
+            <button id="holiday-btn" onclick="buyHoliday()"
+                class="w-full py-3 text-sm font-medium text-slate-500 rounded-xl hover:bg-slate-800/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled>
+                休日チケットを使う (300pt)
+            </button>
+            <p class="mt-2 text-[10px] text-slate-500">
+                ※使用すると明日の朝の判定が免除され、Streakが維持されます。
+            </p>
+        </div>
+
+        <div id="scanner-view"
+            class="fixed inset-0 bg-slate-900 z-[70] flex flex-col items-center justify-center hidden">
+            <div
+                class="relative w-full max-w-sm aspect-square rounded-3xl overflow-hidden shadow-2xl border border-slate-700">
+                <video id="video-feed" class="w-full h-full object-cover"></video>
+                <div class="absolute inset-0 border-[3px] border-white/20 m-12 rounded-2xl"></div>
+                <div
+                    class="absolute top-1/2 left-0 right-0 h-[1px] bg-teal-400/50 shadow-[0_0_10px_rgba(45,212,191,0.5)]">
+                </div>
+            </div>
+            <p class="mt-8 text-sm text-slate-400 tracking-wide font-medium">QRコードを枠内に合わせてください</p>
+            <button onclick="closeScanner()"
+                class="mt-8 px-8 py-3 bg-slate-800 text-white rounded-full hover:bg-slate-700 transition font-medium">キャンセル</button>
+        </div>
+
+    </main>
+
+    <footer class="text-center text-[10px] text-slate-600 pb-2 font-medium tracking-wide">
+        WAKE UP DASH v0.2
+    </footer>
+
+    <script>
+        // 設定定数
+        const CORRECT_QR = "WAKE_UP_DASH_2026";
+        const STORAGE_KEY = "wud_data_v1";
+
+        // 状態管理
+        let state = {
+            targetTime: null, // "HH:MM"
+            streak: 0,
+            points: 0,
+            lastScanDate: null,
+            holidayMode: false
+        };
+
+        let clockInterval; // Timer Interval ID
+
+        // ZXingリーダー
+        const codeReader = new ZXing.BrowserQRCodeReader();
+
+        // 初期化処理
+        window.onload = () => {
+            loadState();
+            if (!state.targetTime) {
+                switchView('setup-view');
+            } else {
+                switchView('dashboard-view');
+                startClock();
+            }
+            updateUI();
+        };
+
+        function loadState() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) state = JSON.parse(saved);
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            updateUI();
+        }
+
+        function switchView(id) {
+            ['setup-view', 'dashboard-view', 'scanner-view'].forEach(v => {
+                document.getElementById(v).classList.add('hidden');
+            });
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function saveSettings() {
+            const input = document.getElementById('target-time-input').value;
+            if (!input) return alert("時刻を設定してください");
+            state.targetTime = input;
+            saveState();
+            switchView('dashboard-view');
+            startClock();
+        }
+
+        function startClock() {
+            // Clear existing interval to prevent duplicates
+            if (clockInterval) clearInterval(clockInterval);
+
+            document.getElementById('target-display').innerText = state.targetTime;
+
+            clockInterval = setInterval(() => {
+                const now = new Date();
+                const [h, m] = state.targetTime.split(':');
+                const target = new Date();
+                target.setHours(h, m, 0, 0);
+
+                // 現在時刻表示（時計機能）
+                const diff = (now - target) / 1000; // 秒差分
+
+                const timerBox = document.getElementById('main-timer');
+                const label = document.getElementById('timer-label');
+
+                // ターゲットタイム ～ 5分後 (300秒) の間はカウントダウン
+                if (diff >= 0 && diff <= 300) {
+                    // カウントダウン表示（残り時間）
+                    const remaining = 300 - diff;
+                    const mins = Math.floor(remaining / 60);
+                    const secs = Math.floor(remaining % 60);
+                    const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+                    document.getElementById('main-timer').innerText = timeStr;
+
+                    // 赤文字
+                    timerBox.classList.add('text-red-400');
+                    timerBox.classList.remove('text-white');
+                    label.innerText = "残り時間";
+                    label.classList.remove('hidden');
+                } else {
+                    // 通常時計表示
+                    const timeStr = now.toLocaleTimeString('ja-JP', { hour12: false });
+                    document.getElementById('main-timer').innerText = timeStr;
+
+                    // 白文字
+                    timerBox.classList.remove('text-red-400');
+                    timerBox.classList.add('text-white');
+                    label.classList.add('hidden');
+                }
+            }, 1000);
+
+            // Periodically update UI to check for time restrictions
+            setInterval(updateUI, 60000);
+        }
+
+        function updateUI() {
+            document.getElementById('streak-disp').innerText = state.streak;
+            document.getElementById('score-disp').innerText = state.points;
+
+            const holBtn = document.getElementById('holiday-btn');
+
+            // Time restriction check for Holiday Ticket (Target -1h to Target +30m)
+            let isRestrictedTime = false;
+            if (state.targetTime) {
+                const now = new Date();
+                const [h, m] = state.targetTime.split(':');
+                const target = new Date();
+                target.setHours(h, m, 0, 0);
+
+                // Adjust target date if it's strictly about "this upcoming target" vs "today's target"
+                // For simplicity, we compare with today's target time instance.
+
+                const diffMinutes = (now - target) / (1000 * 60);
+
+                // Restricted: -60 mins <= diff <= +30 mins
+                if (diffMinutes >= -60 && diffMinutes <= 30) {
+                    isRestrictedTime = true;
+                }
+            }
+
+            if (state.points >= 300 && !isRestrictedTime) {
+                holBtn.disabled = false;
+                holBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                holBtn.innerText = "休日チケットを使う (300pt)";
+            } else {
+                holBtn.disabled = true;
+                holBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                if (isRestrictedTime) {
+                    holBtn.innerText = "判定時間前後は使用不可";
+                } else if (state.points < 300) {
+                    holBtn.innerText = "休日チケットを使う (300pt)";
+                }
+            }
+        }
+
+        // カメラ起動
+        async function activateScanner() {
+            switchView('scanner-view');
+            try {
+                const videoInputDevices = await codeReader.listVideoInputDevices();
+                const selectedDeviceId = videoInputDevices[0].deviceId;
+
+                await codeReader.decodeFromVideoDevice(selectedDeviceId, 'video-feed', (result, err) => {
+                    if (result) {
+                        if (result.text === CORRECT_QR) {
+                            handleSuccess();
+                            codeReader.reset();
+                        } else {
+                            console.log("Wrong QR:", result.text);
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error(err);
+                alert("カメラの起動に失敗しました。権限を確認してください。");
+                closeScanner();
+            }
+        }
+
+        function closeScanner() {
+            codeReader.reset();
+            switchView('dashboard-view');
+        }
+
+        function handleSuccess() {
+            const now = new Date();
+            const todayStr = now.toLocaleDateString();
+
+            if (state.lastScanDate === todayStr) {
+                alert("本日のスキャンは完了しています！");
+                closeScanner();
+                return;
+            }
+
+            const [h, m] = state.targetTime.split(':');
+            const target = new Date();
+            target.setHours(h, m, 0, 0);
+
+            const diffSeconds = (now - target) / 1000;
+
+            let pts = 0;
+            let msg = "";
+
+            if (state.holidayMode) {
+                pts = 0;
+                msg = "休日チケット使用。Streakは維持されます。";
+                state.holidayMode = false;
+            } else {
+                if (diffSeconds < 0) {
+                    pts = 0;
+                    msg = "失敗: 早すぎます (0pt)";
+                } else if (diffSeconds <= 30) {
+                    pts = 100;
+                    msg = "ランクS: 神速の起床 (100pt)";
+                } else if (diffSeconds <= 300) {
+                    pts = 50;
+                    msg = "ランクA: 起床成功 (50pt)";
+                } else {
+                    pts = 0;
+                    msg = "失敗: 時間切れ (0pt)";
+                }
+            }
+
+            state.points += pts;
+
+            // Streak handling logic fix
+            if (pts > 0 || state.holidayMode) {
+                // Success or Holiday
+                if (state.streak === -1) state.streak = 1; // Recover from fail state if logic allows, or just set to 1? 
+                // Actually logic says: if fail -> streak=0. So here we just increment.
+                state.streak += 1;
+            } else {
+                // Fail
+                state.streak = 0;
+            }
+
+            state.lastScanDate = todayStr;
+            saveState();
+
+            // Show Custom Modal
+            showScanResult(pts, msg);
+            closeScanner();
+        }
+
+        function showScanResult(pts, msg) {
+            const modal = document.getElementById('scan-result-modal');
+            const title = document.getElementById('scan-title');
+            const ptsDisp = document.getElementById('scan-pts');
+            const msgDisp = document.getElementById('scan-msg');
+
+            if (pts > 0) {
+                title.innerText = "SUCCESS";
+                title.className = "text-2xl font-bold mb-2 text-center text-teal-400 tracking-wide";
+                ptsDisp.innerText = `+${pts} PT`;
+                ptsDisp.className = "text-5xl font-black text-center text-white mb-6 drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]";
+            } else {
+                title.innerText = "FAILED";
+                title.className = "text-2xl font-bold mb-2 text-center text-red-500 tracking-wide";
+                ptsDisp.innerText = "+0 PT";
+                ptsDisp.className = "text-5xl font-black text-center text-slate-500 mb-6";
+            }
+
+            // Simple message parsing for display
+            // msg format: "Rank S: Title (100pt)"
+            // We want just the Title part ideally, or just show the whole msg
+            msgDisp.innerText = msg.split('(')[0]; // Remove points from msg if redundant
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeScanResult() {
+            document.getElementById('scan-result-modal').classList.add('hidden');
+            location.reload(); // Reload to refresh UI and state
+        }
+
+        function buyHoliday() {
+            if (state.points >= 300) {
+                if (confirm("300pt消費して「明日休み」チケットを使いますか？")) {
+                    state.points -= 300;
+                    state.holidayMode = true;
+                    saveState();
+                    alert("休日モードを適用しました。次のスキャンは判定免除されます。");
+                }
+            }
+        }
+
+        // Settings Logic
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function changeTime() {
+            // Show custom confirm modal
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            closeSettings();
+        }
+
+        function closeConfirm() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+        }
+
+        // Help Modal Logic
+        function openHelp() {
+            document.getElementById('help-modal').classList.remove('hidden');
+        }
+
+        function closeHelp() {
+            document.getElementById('help-modal').classList.add('hidden');
+        }
+
+        function executeChangeTime() {
+            state.targetTime = null;
+            state.streak = 0; // Reset streak
+            saveState();
+            location.reload();
+        }
+
+        function resetData() {
+            // Show custom confirm modal
+            document.getElementById('reset-confirm-modal').classList.remove('hidden');
+            closeSettings();
+        }
+
+        function closeResetConfirm() {
+            document.getElementById('reset-confirm-modal').classList.add('hidden');
+        }
+
+        function executeResetData() {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+
+        function downloadQRCode() {
+            // Generate QR Code
+            const qr = new QRious({
+                value: CORRECT_QR,
+                size: 500,
+                level: 'H'
+            });
+
+            // Create download link
+            const link = document.createElement('a');
+            link.href = qr.toDataURL();
+            link.download = 'wake_up_dash_qr.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+
+</html>
